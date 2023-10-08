@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 Future<void> main() async {
   await dotenv.load(fileName: '.env');
@@ -35,7 +39,6 @@ class _PixabayPageState extends State<PixabayPage> {
         'https://pixabay.com/api/?key=$token&q=$text月&image_type=photo&pretty=true&per_page=100');
     hits = response.data['hits'];
     setState(() {});
-    print(hits);
   }
 
   @override
@@ -50,6 +53,7 @@ class _PixabayPageState extends State<PixabayPage> {
     return Scaffold(
         appBar: AppBar(
           title: TextFormField(
+            initialValue: '花',
             decoration: const InputDecoration(
               fillColor: Colors.white,
               filled: true,
@@ -66,7 +70,47 @@ class _PixabayPageState extends State<PixabayPage> {
             itemCount: hits.length,
             itemBuilder: (context, index) {
               Map<String, dynamic> hit = hits[index];
-              return Image.network(hit['previewURL']);
+              return InkWell(
+                onTap: (() async {
+                  // 1.URLから画像をダウンロード
+                  Response response = await Dio().get(
+                    hit['webformatURL'],
+                    options: Options(responseType: ResponseType.bytes),
+                  );
+                  // 2.ダウンロードしたデータをファイルに保存
+                  Directory dir = await getTemporaryDirectory();
+                  // 3.Shareパッケージを呼び出して共有
+                  final File imageFile = await File('${dir.path}/image.png')
+                      .writeAsBytes(response.data);
+                  XFile file = XFile(imageFile.path);
+                  await Share.shareXFiles([file]);
+                }),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      hit['previewURL'],
+                      fit: BoxFit.cover,
+                    ),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Container(
+                        color: Colors.white,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.thumb_up_alt_outlined,
+                              size: 14,
+                            ),
+                            Text('${hit['likes']}'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
             }));
   }
 }
