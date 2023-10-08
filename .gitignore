@@ -9,6 +9,7 @@
 .history
 .svn/
 .fvm/flutter_sdk
+.env
 migrate_working_dir/
 
 # IntelliJ related

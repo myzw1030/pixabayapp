@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: '.env');
   runApp(const MyApp());
 }
 
@@ -25,10 +27,12 @@ class PixabayPage extends StatefulWidget {
 
 class _PixabayPageState extends State<PixabayPage> {
   List hits = [];
+  // APIのkeyは環境変数設定
+  final token = dotenv.env['ACCESS_TOKEN'];
 
-  Future<void> fetchImages() async {
+  Future<void> fetchImages(String text) async {
     Response response = await Dio().get(
-        'https://pixabay.com/api/?key=30234509-4feb539c6545edacd283900b8&q=yellow+flowers&image_type=photo&pretty=true');
+        'https://pixabay.com/api/?key=$token&q=$text月&image_type=photo&pretty=true&per_page=100');
     hits = response.data['hits'];
     setState(() {});
     print(hits);
@@ -38,12 +42,23 @@ class _PixabayPageState extends State<PixabayPage> {
   void initState() {
     super.initState();
     // 最初に一度だけ
-    fetchImages();
+    fetchImages('花');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        appBar: AppBar(
+          title: TextFormField(
+            decoration: const InputDecoration(
+              fillColor: Colors.white,
+              filled: true,
+            ),
+            onFieldSubmitted: (text) {
+              fetchImages(text);
+            },
+          ),
+        ),
         body: GridView.builder(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
